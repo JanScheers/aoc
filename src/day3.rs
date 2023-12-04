@@ -107,11 +107,11 @@ pub fn part_two(input: &str) -> usize {
         }
     }
 
-    map.iter().fold(0, |acc, (_, v)| {
-        return if v.len() == 2 {
-            acc + v.iter().product::<usize>()
+    map.iter().fold(0, |prod, (_, v)| {
+        if v.len() == 2 {
+            prod + v[0] * v[1]
         } else {
-            acc
-        };
+            prod
+        }
     })
 }
