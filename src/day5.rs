@@ -1,3 +1,5 @@
+use std::cmp::{max, min};
+
 pub const INPUT: &str = "seeds: 79 14 55 13
 
 seed-to-soil map:
@@ -32,13 +34,14 @@ humidity-to-location map:
 60 56 37
 56 93 4";
 
-pub fn parse(input: &str) -> (Vec<usize>, Vec<Vec<(usize, usize, usize)>>) {
+pub fn parse(input: &str) -> (Vec<i64>, Vec<Vec<(i64, i64, i64)>>) {
     let mut maps = input.trim().split("\n\n");
 
     let Some((_, seeds)) = maps.next().and_then(|s| s.split_once(": ")) else {
         panic!("no seeds")
     };
-    let seeds: Vec<usize> = seeds
+
+    let seeds: Vec<i64> = seeds
         .split_whitespace()
         .map(|s| s.parse().unwrap())
         .collect();
@@ -47,52 +50,66 @@ pub fn parse(input: &str) -> (Vec<usize>, Vec<Vec<(usize, usize, usize)>>) {
         .map(|map| {
             let mut lines = map.lines();
             lines.next();
-            return lines
+            let mut full: Vec<_> = lines
                 .map(|line| {
-                    let [a, b, c] = line
+                    let [dst, src, len] = line
                         .split_whitespace()
                         .map(|i| i.parse().unwrap())
-                        .collect::<Vec<usize>>()[..]
+                        .collect::<Vec<i64>>()[..]
                     else {
                         panic!();
                     };
-                    return (a, b, c);
+                    (src, src + len, dst - src)
                 })
-                .collect::<Vec<_>>();
+                .collect();
+            full.sort();
+            let (mut maps, mut prev) = (vec![], 0);
+            for a in full.into_iter() {
+                maps.push((prev, a.0, 0));
+                prev = a.1;
+                maps.push(a);
+            }
+            maps.push((prev, i64::MAX, 0));
+            return maps;
         })
         .collect();
     return (seeds, maps);
 }
 
-fn transform(&seed: &usize, map: &Vec<(usize, usize, usize)>) -> usize {
-    for &(dst, src, len) in map {
-        if src <= seed && seed < src + len {
-            return dst + seed - src;
-        }
-    }
-    return seed;
+fn transform(&(st, en): &(i64, i64), map: &Vec<(i64, i64, i64)>) -> Vec<(i64, i64)> {
+    map.iter()
+        .filter_map(|&(src, end, dlt)| {
+            return if en < src || end < st {
+                None
+            } else {
+                Some((max(src, st) + dlt, min(end, en) + dlt))
+            };
+        })
+        .filter(|&(a, b)| a != b)
+        .collect()
 }
 
-pub fn part_one(input: &str) -> usize {
-    let (seeds, maps) = parse(input);
-    let seeds = maps.iter().fold(seeds, |seeds, map| {
-        seeds.iter().map(|s| transform(s, map)).collect()
-    });
-    dbg!(&seeds);
-    return seeds.into_iter().min().unwrap();
+fn calculate(seeds: Vec<(i64, i64)>, maps: Vec<Vec<(i64, i64, i64)>>) -> i64 {
+    maps.iter()
+        .fold(seeds, |seeds, map| {
+            seeds.iter().flat_map(|s| transform(s, map)).collect()
+        })
+        .into_iter()
+        .min()
+        .unwrap()
+        .0
 }
 
-pub fn part_two(input: &str) -> usize {
+pub fn part_one(input: &str) -> i64 {
     let (seeds, maps) = parse(input);
-    let mut acc: Vec<usize> = vec![];
-    for i in 0..seeds.len() / 2 {
-        let (s, l) = (seeds[i * 2], seeds[i * 2 + 1]);
-        let mut rg: Vec<usize> = (s..s + l).collect();
-        acc.append(&mut rg);
-    }
-    let seeds = acc;
-    let seeds = maps.iter().fold(seeds, |seeds, map| {
-        seeds.iter().map(|s| transform(s, map)).collect()
-    });
-    return seeds.into_iter().min().unwrap();
+    let seeds = seeds.iter().map(|&s| (s, s + 1)).collect::<Vec<_>>();
+    calculate(seeds, maps)
+}
+
+pub fn part_two(input: &str) -> i64 {
+    let (seeds, maps) = parse(input);
+    let seeds: Vec<_> = (0..seeds.len() / 2)
+        .map(|i| (seeds[i * 2], seeds[i * 2] + seeds[i * 2 + 1]))
+        .collect();
+    calculate(seeds, maps)
 }
