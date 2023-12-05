@@ -63,11 +63,11 @@ pub fn parse(input: &str) -> (Vec<i64>, Vec<Vec<(i64, i64, i64)>>) {
                 })
                 .collect();
             full.sort();
-            let (mut maps, mut prev) = (vec![], 0);
+            let (mut maps, mut prev) = (vec![], i64::MIN);
             for a in full.into_iter() {
                 maps.push((prev, a.0, 0));
-                prev = a.1;
                 maps.push(a);
+                prev = a.1;
             }
             maps.push((prev, i64::MAX, 0));
             return maps;
@@ -81,17 +81,16 @@ fn calculate(seeds: Vec<(i64, i64)>, maps: Vec<Vec<(i64, i64, i64)>>) -> i64 {
         .fold(seeds, |seeds, map| {
             seeds
                 .into_iter()
-                .flat_map(|(en, st)| {
+                .flat_map(|(st, en)| {
                     map.iter()
-                        .filter_map(|&(src, end, dlt)| {
+                        .filter_map(move |&(src, end, dlt)| {
                             return if en < src || end < st {
                                 None
                             } else {
                                 Some((max(src, st) + dlt, min(end, en) + dlt))
                             };
                         })
-                        .filter(|&(a, b)| a != b)
-                        .collect::<Vec<_>>()
+                        .filter(|(a, b)| a != b)
                 })
                 .collect()
         })
