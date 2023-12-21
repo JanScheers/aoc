@@ -4,11 +4,11 @@ Distance:  9  40  200";
 
 fn race((time, dist): (u64, u64)) -> u64 {
     (0..time).fold(0, |cnt, spd| {
-        return if (spd * (time - spd)) > dist {
+        if (spd * (time - spd)) > dist {
             cnt + 1
         } else {
             cnt
-        };
+        }
     })
 }
 
