@@ -1,4 +1,4 @@
-use crate::Vec2;
+use crate::{pretty, Vec2};
 use std::collections::HashSet;
 
 pub const INPUT1: &str = "
@@ -45,13 +45,6 @@ L---JF-JLJ.||-FJLJJ7
 7-L-JL7||F7|L7F-7F7|
 L.L7LFJ|||||FJL7||LJ
 L7JLJL-JLJLJL--JLJ.L";
-
-fn pretty(map: &Vec<Vec<char>>) {
-    for row in map.iter() {
-        let s: String = row.iter().collect();
-        println!("{}", s)
-    }
-}
 
 const NORTH: Vec2<i64> = Vec2(-1, 0);
 const SOUTH: Vec2<i64> = Vec2(1, 0);
@@ -159,9 +152,9 @@ pub fn part_two(input: &str) -> usize {
             row.iter()
                 .map(|c| {
                     match c {
-                        '|' => inside = !inside,
                         'L' => from_up = true,
                         'F' => from_up = false,
+                        '|' => inside = !inside,
                         '7' => {
                             if from_up {
                                 inside = !inside

@@ -1,6 +1,7 @@
 use std::ops;
 pub mod day1;
 pub mod day10;
+pub mod day11;
 pub mod day2;
 pub mod day3;
 pub mod day4;
@@ -9,6 +10,7 @@ pub mod day6;
 pub mod day7;
 pub mod day8;
 pub mod day9;
+use num::Signed;
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Vec2<T>(T, T);
@@ -26,6 +28,28 @@ impl<T: ops::Sub<Output = T>> ops::Sub<Vec2<T>> for Vec2<T> {
 
     fn sub(self, rhs: Vec2<T>) -> Vec2<T> {
         Vec2(self.0 - rhs.0, self.1 - rhs.1)
+    }
+}
+
+pub fn norm1<T: Signed>(Vec2(a, b): Vec2<T>) -> T {
+    a.abs() + b.abs()
+}
+
+pub fn size<T>(mat: &Vec<Vec<T>>) -> (usize, usize) {
+    (mat.len(), mat[0].len())
+}
+
+pub fn transpose<T: Copy>(mat: &Vec<Vec<T>>) -> Vec<Vec<T>> {
+    let (m, n) = size(mat);
+    (0..n)
+        .map(|j| (0..m).map(|i| mat[i][j]).collect())
+        .collect()
+}
+
+pub fn pretty(map: &Vec<Vec<char>>) {
+    for row in map.iter() {
+        let s: String = row.iter().collect();
+        println!("{}", s)
     }
 }
 
