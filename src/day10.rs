@@ -1,5 +1,5 @@
+use crate::Vec2;
 use std::collections::HashSet;
-use std::ops;
 
 pub const INPUT1: &str = "
 -L|F7
@@ -46,25 +46,6 @@ L---JF-JLJ.||-FJLJJ7
 L.L7LFJ|||||FJL7||LJ
 L7JLJL-JLJLJL--JLJ.L";
 
-#[derive(Hash, Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Point<T>(T, T);
-
-impl<T: ops::Add<Output = T>> ops::Add<Point<T>> for Point<T> {
-    type Output = Point<T>;
-
-    fn add(self, rhs: Point<T>) -> Point<T> {
-        Point(self.0 + rhs.0, self.1 + rhs.1)
-    }
-}
-
-impl<T: ops::Sub<Output = T>> ops::Sub<Point<T>> for Point<T> {
-    type Output = Point<T>;
-
-    fn sub(self, rhs: Point<T>) -> Point<T> {
-        Point(self.0 - rhs.0, self.1 - rhs.1)
-    }
-}
-
 fn pretty(map: &Vec<Vec<char>>) {
     for row in map.iter() {
         let s: String = row.iter().collect();
@@ -72,14 +53,14 @@ fn pretty(map: &Vec<Vec<char>>) {
     }
 }
 
-const NORTH: Point<i64> = Point(-1, 0);
-const SOUTH: Point<i64> = Point(1, 0);
-const WEST: Point<i64> = Point(0, -1);
-const EAST: Point<i64> = Point(0, 1);
+const NORTH: Vec2<i64> = Vec2(-1, 0);
+const SOUTH: Vec2<i64> = Vec2(1, 0);
+const WEST: Vec2<i64> = Vec2(0, -1);
+const EAST: Vec2<i64> = Vec2(0, 1);
 
-fn pipe(pos: Point<i64>, map: &Vec<Vec<char>>) -> Vec<Point<i64>> {
+fn pipe(pos: Vec2<i64>, map: &Vec<Vec<char>>) -> Vec<Vec2<i64>> {
     let (m, n) = (map.len() as i64, map[0].len() as i64);
-    let Point(i, j) = pos;
+    let Vec2(i, j) = pos;
     let x = match map[i as usize][j as usize] {
         '|' => vec![NORTH, SOUTH],
         '-' => vec![EAST, WEST],
@@ -91,9 +72,9 @@ fn pipe(pos: Point<i64>, map: &Vec<Vec<char>>) -> Vec<Point<i64>> {
     }
     .into_iter()
     .filter_map(|dir| {
-        let Point(i, j) = pos + dir;
+        let Vec2(i, j) = pos + dir;
         if 0 <= i && i < m && 0 <= j && j <= n {
-            Some(Point(i, j))
+            Some(Vec2(i, j))
         } else {
             None
         }
@@ -106,11 +87,11 @@ pub fn parse(input: &str) -> Vec<Vec<char>> {
     let mut map: Vec<Vec<char>> = input.trim().lines().map(|l| l.chars().collect()).collect();
     let (m, n) = (map.len() as i64, map[0].len() as i64);
 
-    let mut start: Point<i64> = Point(-2, -2);
+    let mut start: Vec2<i64> = Vec2(-2, -2);
     'find: for i in 0..m {
         for j in 0..n {
             if map[i as usize][j as usize] == 'S' {
-                start = Point(i as i64, j as i64);
+                start = Vec2(i as i64, j as i64);
                 break 'find;
             }
         }
@@ -154,7 +135,7 @@ pub fn parse(input: &str) -> Vec<Vec<char>> {
     let path: HashSet<_> = path.into_iter().collect();
     for i in 0..m {
         for j in 0..n {
-            if !path.contains(&Point(i, j)) {
+            if !path.contains(&Vec2(i, j)) {
                 map[i as usize][j as usize] = '.';
             }
         }
