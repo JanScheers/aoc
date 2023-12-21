@@ -1,4 +1,3 @@
-use std::cmp;
 use std::collections::HashSet;
 use std::ops;
 
@@ -103,7 +102,7 @@ fn pipe(pos: Point<i64>, map: &Vec<Vec<char>>) -> Vec<Point<i64>> {
     return x;
 }
 
-pub fn parse(input: &str) -> (Vec<Vec<char>>, Vec<Point<i64>>) {
+pub fn parse(input: &str) -> Vec<Vec<char>> {
     let mut map: Vec<Vec<char>> = input.trim().lines().map(|l| l.chars().collect()).collect();
     let (m, n) = (map.len() as i64, map[0].len() as i64);
 
@@ -152,57 +151,64 @@ pub fn parse(input: &str) -> (Vec<Vec<char>>, Vec<Point<i64>>) {
         (EAST, SOUTH) => 'F',
         _ => '.',
     };
-    return (map, path);
+    let path: HashSet<_> = path.into_iter().collect();
+    for i in 0..m {
+        for j in 0..n {
+            if !path.contains(&Point(i, j)) {
+                map[i as usize][j as usize] = '.';
+            }
+        }
+    }
+    return map;
 }
 
 pub fn part_one(input: &str) -> usize {
-    let (_, path) = parse(input);
-    return path.len() / 2;
+    parse(input)
+        .iter()
+        .map(|row| row.iter().filter(|c| **c != '.').count())
+        .sum::<usize>()
+        / 2
 }
 
 pub fn part_two(input: &str) -> usize {
-    let (map, path) = parse(input);
-    let path: HashSet<Point<i64>> = path.into_iter().collect();
-    let (m, n) = (map.len() as i64, map[0].len() as i64);
-    let cat: Vec<Vec<char>> = (0..m)
-        .map(|i| {
-            let mut inside = false;
-            let mut from_up = false;
-            let mut res = Vec::with_capacity(n as usize);
-
-            for j in 0..n {
-                if path.contains(&Point(i, j)) {
-                    let c = map[i as usize][j as usize];
+    let show: Vec<Vec<char>> = parse(input)
+        .iter()
+        .map(|row| {
+            let (mut inside, mut from_up) = (false, false);
+            row.iter()
+                .map(|c| {
                     match c {
                         '|' => inside = !inside,
-                        'L' => {
-                            from_up = true;
-                        }
-                        'F' => {
-                            from_up = false;
-                        }
+                        'L' => from_up = true,
+                        'F' => from_up = false,
                         '7' => {
                             if from_up {
-                                inside = !inside;
-                            };
+                                inside = !inside
+                            }
                         }
                         'J' => {
                             if !from_up {
-                                inside = !inside;
+                                inside = !inside
                             }
                         }
                         _ => {}
                     }
-                    res.push(c)
-                } else {
-                    res.push(if inside { '#' } else { ' ' });
-                }
-            }
-            return res;
+
+                    return if *c == '.' {
+                        if inside {
+                            '#'
+                        } else {
+                            ' '
+                        }
+                    } else {
+                        '.'
+                    };
+                })
+                .collect()
         })
         .collect();
-    pretty(&cat);
-    return cat
+    pretty(&show);
+    return show
         .iter()
         .map(|row| row.iter().filter(|c| **c == '#').count())
         .sum();
