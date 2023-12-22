@@ -2,6 +2,7 @@ use std::ops;
 pub mod day1;
 pub mod day10;
 pub mod day11;
+pub mod day12;
 pub mod day2;
 pub mod day3;
 pub mod day4;
@@ -47,6 +48,13 @@ pub fn transpose<T: Copy>(mat: &Vec<Vec<T>>) -> Vec<Vec<T>> {
 }
 
 pub fn pretty(map: &Vec<Vec<char>>) {
+    for row in map.iter() {
+        let s: String = row.iter().collect();
+        println!("{}", s)
+    }
+}
+
+pub fn pretty2(map: &Vec<&[char]>) {
     for row in map.iter() {
         let s: String = row.iter().collect();
         println!("{}", s)

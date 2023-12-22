@@ -1,9 +1,9 @@
-use aoc::{day11, get_day};
+use aoc::{day12, get_day};
 
 fn main() {
-    //let input = day11::INPUT;
-    let input = &get_day(11);
-    dbg!(day11::solve(input, 1));
-    dbg!(day11::solve(input, 999_999));
-    //dbg!(day10::part_two(&get_day(9)));
+    //let input = day12::INPUT;
+    let input = &get_day(12);
+    //dbg!(day12::part_one(input));
+    //dbg!(day12::test(input));
+    dbg!(day12::part_two(input));
 }
