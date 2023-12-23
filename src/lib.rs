@@ -4,6 +4,7 @@ pub mod day10;
 pub mod day11;
 pub mod day12;
 pub mod day13;
+pub mod day14;
 pub mod day2;
 pub mod day3;
 pub mod day4;
@@ -45,6 +46,21 @@ pub fn transpose<T: Copy>(mat: &Vec<Vec<T>>) -> Vec<Vec<T>> {
     let (m, n) = size(mat);
     (0..n)
         .map(|j| (0..m).map(|i| mat[i][j]).collect())
+        .collect()
+}
+
+pub fn rotclck<T: Copy>(map: &Vec<Vec<T>>) -> Vec<Vec<T>> {
+    let (m, n) = size(&map);
+    (0..n)
+        .map(|col| (0..m).rev().map(|row| map[row][col]).collect())
+        .collect()
+}
+
+pub fn rotanti<T: Copy>(map: &Vec<Vec<T>>) -> Vec<Vec<T>> {
+    let (m, n) = size(&map);
+    (0..n)
+        .rev()
+        .map(|col| (0..m).map(|row| map[row][col]).collect())
         .collect()
 }
 
