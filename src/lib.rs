@@ -6,6 +6,7 @@ pub mod day12;
 pub mod day13;
 pub mod day14;
 pub mod day15;
+pub mod day16;
 pub mod day2;
 pub mod day3;
 pub mod day4;
@@ -65,9 +66,9 @@ pub fn rotanti<T: Copy>(map: &Vec<Vec<T>>) -> Vec<Vec<T>> {
         .collect()
 }
 
-pub fn pretty(map: &Vec<Vec<char>>) {
+pub fn pretty<T: ToString>(map: &Vec<Vec<T>>) {
     for row in map.iter() {
-        let s: String = row.iter().collect();
+        let s: String = row.iter().map(|i| i.to_string()).collect();
         println!("{}", s)
     }
 }
