@@ -8,6 +8,7 @@ pub mod day14;
 pub mod day15;
 pub mod day16;
 pub mod day17;
+pub mod day18;
 pub mod day2;
 pub mod day3;
 pub mod day4;
@@ -41,6 +42,14 @@ impl ops::Mul<Vec2<i32>> for i32 {
     type Output = Vec2<i32>;
 
     fn mul(self, rhs: Vec2<i32>) -> Vec2<i32> {
+        Vec2(self * rhs.0, self * rhs.1)
+    }
+}
+
+impl ops::Mul<Vec2<i64>> for i64 {
+    type Output = Vec2<i64>;
+
+    fn mul(self, rhs: Vec2<i64>) -> Vec2<i64> {
         Vec2(self * rhs.0, self * rhs.1)
     }
 }
