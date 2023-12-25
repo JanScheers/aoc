@@ -29,6 +29,22 @@ impl<T: ops::Add<Output = T>> ops::Add<Vec2<T>> for Vec2<T> {
     }
 }
 
+impl ops::Mul<Vec2<usize>> for usize {
+    type Output = Vec2<usize>;
+
+    fn mul(self, rhs: Vec2<usize>) -> Vec2<usize> {
+        Vec2(self * rhs.0, self * rhs.1)
+    }
+}
+
+impl ops::Mul<Vec2<i32>> for i32 {
+    type Output = Vec2<i32>;
+
+    fn mul(self, rhs: Vec2<i32>) -> Vec2<i32> {
+        Vec2(self * rhs.0, self * rhs.1)
+    }
+}
+
 impl<T: ops::Sub<Output = T>> ops::Sub<Vec2<T>> for Vec2<T> {
     type Output = Vec2<T>;
 
