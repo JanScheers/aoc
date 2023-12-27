@@ -1,4 +1,4 @@
-use crate::{day14::count, pretty, size, Vec2};
+use crate::{pretty, size, Vec2};
 use std::cmp;
 
 pub const INPUT: &str = "R 6 (#70c710)
@@ -145,7 +145,7 @@ pub fn dig(commands: Vec<(usize, usize)>) -> Vec<Vec<char>> {
     map
 }
 
-pub fn dig2(commands: Vec<(usize, usize)>) -> usize {
+pub fn dig2(commands: Vec<(usize, usize)>) -> Vec<Vec<char>> {
     let mut curr = Vec2(0, 0);
     let mut trench = vec![];
     for (dir, length) in commands.into_iter() {
@@ -168,9 +168,10 @@ pub fn dig2(commands: Vec<(usize, usize)>) -> usize {
     trench.sort();
 
     let m = trench.iter().map(|a| a.2).max().unwrap() + 1;
-    return (0..m)
+    let n = trench.iter().map(|a| a.0).max().unwrap() + 1;
+    let map = (0..m)
         .map(|row| {
-            let mut sum = 0;
+            let mut out = vec!['.'; n as usize];
             let mut cols = trench.iter().filter(|(_, a, b, _)| *a <= row && row <= *b);
 
             let mut start = cols.next();
@@ -180,12 +181,16 @@ pub fn dig2(commands: Vec<(usize, usize)>) -> usize {
                     a = b.unwrap();
                     b = cols.next();
                 }
-                sum += a.0 - start.unwrap().0 + 1;
+                for col in start.unwrap().0..a.0 + 1 {
+                    out[col as usize] = '#';
+                }
                 start = b;
             }
-            sum as usize
+            out
         })
-        .sum();
+        .collect();
+    pretty(&map);
+    return map;
 }
 
 pub fn part_one(input: &str) -> usize {
@@ -196,5 +201,26 @@ pub fn part_one(input: &str) -> usize {
 }
 
 pub fn part_two(input: &str) -> usize {
-    dig2(parse1(input))
+    let map1 = dig(parse1(input));
+    let map2 = dig2(parse1(input));
+    let (m, n) = size(&map1);
+    pretty(
+        &(0..m)
+            .map(|row| {
+                (0..n)
+                    .map(|col| {
+                        if map1[row][col] != '.' && map2[row][col] != '#' {
+                            'X'
+                        } else {
+                            '.'
+                        }
+                    })
+                    .collect()
+            })
+            .collect(),
+    );
+    println!();
+    map1.iter()
+        .map(|row| row.iter().filter(|c| **c != '.').count())
+        .sum()
 }
