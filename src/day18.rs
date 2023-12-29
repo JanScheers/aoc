@@ -106,7 +106,6 @@ pub fn dig(commands: Vec<(usize, usize)>) -> Vec<Vec<char>> {
         })
         .collect();
 
-    pretty(&map);
     println!();
     let (m, n) = size(&map);
     let map: Vec<Vec<char>> = (0..m)
@@ -141,55 +140,98 @@ pub fn dig(commands: Vec<(usize, usize)>) -> Vec<Vec<char>> {
                 .collect()
         })
         .collect();
-    pretty(&map);
     map
+}
+
+struct Column {
+    col: i64,
+    min: i64,
+    max: i64,
+    up: bool,
+    index: usize,
+}
+
+fn is_edge((a, b): (&Column, Option<&Column>), row: i64, len: usize) -> bool {
+    if b.is_none() {
+        return true;
+    }
+    let b = b.unwrap();
+
+    if a.index == (b.index + 2) % len && row == a.min && row == b.min {
+        return false;
+    }
+
+    if (a.index + 2) % len == b.index && row == a.max && row == b.max {
+        return false;
+    }
+
+    return !a.up && b.up;
 }
 
 pub fn dig2(commands: Vec<(usize, usize)>) -> Vec<Vec<char>> {
     let mut curr = Vec2(0, 0);
     let mut trench = vec![];
-    for (dir, length) in commands.into_iter() {
+    let len = commands.len();
+    for (index, (dir, length)) in commands.into_iter().enumerate() {
         let next = curr + length as i64 * DIRS[dir];
         if dir == SOUTH {
-            trench.push((curr.1, curr.0, next.0, dir));
+            trench.push(Column {
+                col: curr.1,
+                min: curr.0,
+                max: next.0,
+                up: false,
+                index,
+            });
         } else if dir == NORTH {
-            trench.push((curr.1, next.0, curr.0, dir));
+            trench.push(Column {
+                col: curr.1,
+                min: next.0,
+                max: curr.0,
+                up: true,
+                index,
+            });
         }
         curr = next;
     }
-    let top_left = trench.iter().fold(Vec2(0, 0), |a, b| {
-        Vec2(cmp::min(a.0, b.1), cmp::min(a.1, b.0))
+    let (i, j) = trench.iter().fold((0, 0), |(i, j), col| {
+        (cmp::min(i, col.min), cmp::min(j, col.col))
     });
 
     trench = trench
-        .iter()
-        .map(|(col, a, b, dir)| (col - top_left.1, a - top_left.0, b - top_left.0, *dir))
+        .into_iter()
+        .map(|col| Column {
+            col: col.col - j,
+            min: col.min - i,
+            max: col.max - i,
+            ..col
+        })
         .collect();
-    trench.sort();
+    trench.sort_unstable_by_key(|c| c.col);
 
-    let m = trench.iter().map(|a| a.2).max().unwrap() + 1;
-    let n = trench.iter().map(|a| a.0).max().unwrap() + 1;
+    let m = trench.iter().map(|c| c.max).max().unwrap() + 1;
+    let n = trench.iter().map(|c| c.col).max().unwrap() + 1;
+
     let map = (0..m)
         .map(|row| {
             let mut out = vec!['.'; n as usize];
-            let mut cols = trench.iter().filter(|(_, a, b, _)| *a <= row && row <= *b);
+            let mut cols = trench.iter().filter(|c| c.min <= row && row <= c.max);
 
             let mut start = cols.next();
             while start.is_some() {
-                let (mut a, mut b) = (start.unwrap(), cols.next());
-                while b.is_some() && !(a.3 == SOUTH && b.unwrap().3 == NORTH) {
-                    a = b.unwrap();
-                    b = cols.next();
+                let mut curr = (start.unwrap(), cols.next());
+
+                while !is_edge(curr, row, len) {
+                    curr = (curr.1.unwrap(), cols.next())
                 }
-                for col in start.unwrap().0..a.0 + 1 {
+
+                for col in start.unwrap().col..curr.0.col + 1 {
                     out[col as usize] = '#';
                 }
-                start = b;
+                start = curr.1;
             }
             out
         })
         .collect();
-    pretty(&map);
     return map;
 }
 
@@ -204,22 +246,30 @@ pub fn part_two(input: &str) -> usize {
     let map1 = dig(parse1(input));
     let map2 = dig2(parse1(input));
     let (m, n) = size(&map1);
-    pretty(
-        &(0..m)
-            .map(|row| {
-                (0..n)
-                    .map(|col| {
-                        if map1[row][col] != '.' && map2[row][col] != '#' {
-                            'X'
-                        } else {
-                            '.'
-                        }
-                    })
-                    .collect()
-            })
-            .collect(),
-    );
-    println!();
+    (0..m).for_each(|row| {
+        if (0..n).any(|col| {
+            (map2[row][col] == '.' && map1[row][col] != '.')
+                || (map2[row][col] == '#' && map1[row][col] == '.')
+        }) {
+            for i in 0..3 {
+                println!(
+                    "{}",
+                    map1[(row + i).saturating_sub(1)].iter().collect::<String>()
+                );
+            }
+
+            println!();
+
+            for i in 0..3 {
+                println!(
+                    "{}",
+                    map2[(row + i).saturating_sub(1)].iter().collect::<String>()
+                );
+            }
+            println!();
+            println!();
+        }
+    });
     map1.iter()
         .map(|row| row.iter().filter(|c| **c != '.').count())
         .sum()
