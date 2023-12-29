@@ -34,6 +34,26 @@ impl Rule {
             part[self.rating] < self.threshold
         }
     }
+
+    fn test(&self, (min, max): (usize, usize)) -> (Option<(usize, usize)>, Option<(usize, usize)>) {
+        if self.greater {
+            if min > self.threshold {
+                return (Some((min, max)), None);
+            } else if max <= self.threshold {
+                return (None, Some((min, max)));
+            } else {
+                return (Some((self.threshold + 1, max)), Some((min, self.threshold)));
+            }
+        } else {
+            if max < self.threshold {
+                return (Some((min, max)), None);
+            } else if min >= self.threshold {
+                return (None, Some((min, max)));
+            } else {
+                return (Some((min, self.threshold - 1)), Some((self.threshold, max)));
+            }
+        }
+    }
 }
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
@@ -134,30 +154,6 @@ pub fn part_one(input: &str) -> usize {
         .sum()
 }
 
-fn test_range(
-    min: usize,
-    max: usize,
-    rule: &Rule,
-) -> (Option<(usize, usize)>, Option<(usize, usize)>) {
-    if rule.greater {
-        if min > rule.threshold {
-            return (Some((min, max)), None);
-        } else if max <= rule.threshold {
-            return (None, Some((min, max)));
-        } else {
-            return (Some((rule.threshold + 1, max)), Some((min, rule.threshold)));
-        }
-    } else {
-        if max < rule.threshold {
-            return (Some((min, max)), None);
-        } else if min >= rule.threshold {
-            return (None, Some((min, max)));
-        } else {
-            return (Some((min, rule.threshold - 1)), Some((rule.threshold, max)));
-        }
-    }
-}
-
 pub fn part_two(input: &str) -> usize {
     let (flows, _) = parse(input);
     let mut accepted = vec![];
@@ -176,8 +172,7 @@ pub fn part_two(input: &str) -> usize {
         let node = flows.get(&node).unwrap();
         let mut part = part.clone();
         for rule in node.rules.iter() {
-            let (min, max) = part[rule.rating];
-            let (pass, fail) = test_range(min, max, rule);
+            let (pass, fail) = rule.test(part[rule.rating]);
             if pass.is_some() {
                 let mut next = part.clone();
                 next[rule.rating] = pass.unwrap();
