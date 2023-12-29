@@ -32,7 +32,7 @@ const DIRS: &[Vec2<i64>] = &[
     Vec2(0, -1),
 ];
 
-pub fn parse1(input: &str) -> Vec<(usize, usize)> {
+pub fn parse_short(input: &str) -> Vec<(usize, usize)> {
     input
         .trim()
         .lines()
@@ -53,7 +53,7 @@ pub fn parse1(input: &str) -> Vec<(usize, usize)> {
         .collect()
 }
 
-pub fn parse2(input: &str) -> Vec<(usize, usize)> {
+pub fn parse_long(input: &str) -> Vec<(usize, usize)> {
     input
         .trim()
         .lines()
@@ -72,7 +72,7 @@ pub fn parse2(input: &str) -> Vec<(usize, usize)> {
         .collect()
 }
 
-pub fn dig(commands: Vec<(usize, usize)>) -> Vec<Vec<char>> {
+pub fn pretty_dig(commands: Vec<(usize, usize)>) -> Vec<Vec<char>> {
     let mut curr = Vec2(0, 0);
     let mut trench = vec![];
     for (dir, length) in commands.into_iter() {
@@ -167,7 +167,7 @@ fn is_edge((a, b): (&Column, Option<&Column>), row: i64, len: usize) -> bool {
     return !a.up && b.up;
 }
 
-pub fn dig2(commands: Vec<(usize, usize)>) -> usize {
+pub fn count_dig(commands: Vec<(usize, usize)>) -> usize {
     let mut curr = Vec2(0, 0);
     let mut trench = vec![];
     let len = commands.len();
@@ -208,34 +208,27 @@ pub fn dig2(commands: Vec<(usize, usize)>) -> usize {
     trench.sort_unstable_by_key(|c| c.col);
 
     let m = trench.iter().map(|c| c.max).max().unwrap() + 1;
-    dbg!(m);
-    return (0..m)
-        .map(|row| {
-            let mut sum = 0;
-            let mut cols = trench.iter().filter(|c| c.min <= row && row <= c.max);
+    let mut sum = 0;
+    for row in 0..m {
+        let mut cols = trench.iter().filter(|c| c.min <= row && row <= c.max);
+        let mut start = cols.next();
+        while start.is_some() {
+            let mut curr = (start.unwrap(), cols.next());
 
-            let mut start = cols.next();
-            while start.is_some() {
-                let mut curr = (start.unwrap(), cols.next());
-
-                while !is_edge(curr, row, len) {
-                    curr = (curr.1.unwrap(), cols.next())
-                }
-                sum += curr.0.col - start.unwrap().col + 1;
-                start = curr.1;
+            while !is_edge(curr, row, len) {
+                curr = (curr.1.unwrap(), cols.next())
             }
-            sum as usize
-        })
-        .sum();
+            sum += curr.0.col - start.unwrap().col + 1;
+            start = curr.1;
+        }
+    }
+    return sum as usize;
 }
 
 pub fn part_one(input: &str) -> usize {
-    let map = dig(parse1(input));
-    map.iter()
-        .map(|row| row.iter().filter(|c| **c != '.').count())
-        .sum()
+    count_dig(parse_short(input))
 }
 
 pub fn part_two(input: &str) -> usize {
-    dig2(parse2(input))
+    count_dig(parse_long(input))
 }
