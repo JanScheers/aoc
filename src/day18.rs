@@ -1,4 +1,4 @@
-use crate::{pretty, size, Vec2};
+use crate::{size, Vec2};
 use std::cmp;
 
 pub const INPUT: &str = "R 6 (#70c710)
@@ -67,7 +67,6 @@ pub fn parse2(input: &str) -> Vec<(usize, usize)> {
                 _ => 0,
             };
             let length = usize::from_str_radix(&color[..5], 16).unwrap();
-            dbg!(length);
             return (dir, length);
         })
         .collect()
@@ -168,7 +167,7 @@ fn is_edge((a, b): (&Column, Option<&Column>), row: i64, len: usize) -> bool {
     return !a.up && b.up;
 }
 
-pub fn dig2(commands: Vec<(usize, usize)>) -> Vec<Vec<char>> {
+pub fn dig2(commands: Vec<(usize, usize)>) -> usize {
     let mut curr = Vec2(0, 0);
     let mut trench = vec![];
     let len = commands.len();
@@ -209,11 +208,10 @@ pub fn dig2(commands: Vec<(usize, usize)>) -> Vec<Vec<char>> {
     trench.sort_unstable_by_key(|c| c.col);
 
     let m = trench.iter().map(|c| c.max).max().unwrap() + 1;
-    let n = trench.iter().map(|c| c.col).max().unwrap() + 1;
-
-    let map = (0..m)
+    dbg!(m);
+    return (0..m)
         .map(|row| {
-            let mut out = vec!['.'; n as usize];
+            let mut sum = 0;
             let mut cols = trench.iter().filter(|c| c.min <= row && row <= c.max);
 
             let mut start = cols.next();
@@ -223,16 +221,12 @@ pub fn dig2(commands: Vec<(usize, usize)>) -> Vec<Vec<char>> {
                 while !is_edge(curr, row, len) {
                     curr = (curr.1.unwrap(), cols.next())
                 }
-
-                for col in start.unwrap().col..curr.0.col + 1 {
-                    out[col as usize] = '#';
-                }
+                sum += curr.0.col - start.unwrap().col + 1;
                 start = curr.1;
             }
-            out
+            sum as usize
         })
-        .collect();
-    return map;
+        .sum();
 }
 
 pub fn part_one(input: &str) -> usize {
@@ -243,34 +237,5 @@ pub fn part_one(input: &str) -> usize {
 }
 
 pub fn part_two(input: &str) -> usize {
-    let map1 = dig(parse1(input));
-    let map2 = dig2(parse1(input));
-    let (m, n) = size(&map1);
-    (0..m).for_each(|row| {
-        if (0..n).any(|col| {
-            (map2[row][col] == '.' && map1[row][col] != '.')
-                || (map2[row][col] == '#' && map1[row][col] == '.')
-        }) {
-            for i in 0..3 {
-                println!(
-                    "{}",
-                    map1[(row + i).saturating_sub(1)].iter().collect::<String>()
-                );
-            }
-
-            println!();
-
-            for i in 0..3 {
-                println!(
-                    "{}",
-                    map2[(row + i).saturating_sub(1)].iter().collect::<String>()
-                );
-            }
-            println!();
-            println!();
-        }
-    });
-    map1.iter()
-        .map(|row| row.iter().filter(|c| **c != '.').count())
-        .sum()
+    dig2(parse2(input))
 }
