@@ -107,7 +107,7 @@ pub fn part_one(input: &str) -> usize {
     for _ in 0..1 {
         let (mut next, mut last, mut pulses) = (0, 1, vec![(0, 0); 1 << 32]);
         while next != last {
-            dbg!(next, last);
+            pret(&memory, gates.len());
             let (dst, high) = pulses[next];
             if high > 0 {
                 nhigh += 1;
@@ -139,7 +139,6 @@ pub fn part_one(input: &str) -> usize {
                 last = (last + 1) % (1 << 16);
             }
         }
-        pret(&memory, gates.len());
     }
     nlow * nhigh
 }
