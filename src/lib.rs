@@ -94,6 +94,18 @@ pub fn rotanti<T: Copy>(map: &Vec<Vec<T>>) -> Vec<Vec<T>> {
         .collect()
 }
 
+pub fn gcd(a: usize, b: usize) -> usize {
+    let (mut a, mut b) = if a > b { (a, b) } else { (b, a) };
+    while b != 0 {
+        (a, b) = (b, a % b);
+    }
+    return a;
+}
+
+pub fn lcm(v: &Vec<usize>) -> usize {
+    v.iter().fold(v[0], |lcm, a| lcm / gcd(lcm, *a) * a)
+}
+
 pub fn pretty<T: ToString>(map: &Vec<Vec<T>>) {
     for row in map.iter() {
         let s: String = row.iter().map(|i| i.to_string()).collect();
@@ -111,7 +123,7 @@ pub fn pretty2(map: &Vec<&[char]>) {
 pub fn get_day(day: u32) -> String {
     let client = reqwest::blocking::Client::new();
     let url = format!("https://adventofcode.com/2023/day/{}/input", day);
-    let Ok(response) = client.get(url).header("Cookie", "session=53616c7465645f5fa452d35a782d6a769d21bdbe284e54651ec98b3d7633491f06cca83de27df1dc022bcde10715347229fff34ea48bfe0b70499b76da9bad74").send() else {
+    let Ok(response) = client.get(url).header("Cookie", "session=53616c7465645f5f9cff0b74a418fafbe18b6fe39f2465514ac3acdc0bb808a2d43d973544cbede77ddb2dbc97ac6066766a48ae253e3db82e9f54edfd518009").send() else {
          return String::new();
     };
     return response.text().unwrap_or_else(|_| String::new());

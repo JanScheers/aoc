@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+
+use crate::lcm;
 pub const INPUT: &str = "RL
 
 AAA = (BBB, CCC)
@@ -41,14 +43,6 @@ pub fn parse(input: &str) -> (Vec<char>, HashMap<String, (String, String)>) {
     return (seq, map);
 }
 
-fn gcd(a: usize, b: usize) -> usize {
-    let (mut a, mut b) = if a > b { (a, b) } else { (b, a) };
-    while b != 0 {
-        (a, b) = (b, a % b);
-    }
-    return a;
-}
-
 fn follow(node: &String, seq: &Vec<char>, map: &HashMap<String, (String, String)>) -> usize {
     let mut node = &node.clone();
     let mut count = 0;
@@ -87,7 +81,5 @@ pub fn part_two(input: &str) -> usize {
         })
         .collect();
     dbg!(&lengths);
-    lengths
-        .iter()
-        .fold(lengths[0], |lcm, a| lcm / gcd(lcm, *a) * a)
+    lcm(&lengths)
 }

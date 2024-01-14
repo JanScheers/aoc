@@ -1,4 +1,6 @@
 use std::iter;
+
+use crate::lcm;
 pub const INPUT: &str = "broadcaster -> a, b, c
 %a -> b
 %b -> c
@@ -19,7 +21,16 @@ enum GateKind {
     Output,
 }
 
-fn parse(input: &str) -> (usize, usize, Vec<Gate>, Vec<String>) {
+#[derive(Hash, Debug, PartialEq, Eq, Clone)]
+struct Gate {
+    label: String,
+    index: usize,
+    kind: GateKind,
+    input: Vec<usize>,
+    output: Vec<usize>,
+}
+
+fn parse(input: &str) -> Vec<Gate> {
     let gates: Vec<(String, GateKind, Vec<String>)> = input
         .trim()
         .lines()
@@ -44,8 +55,6 @@ fn parse(input: &str) -> (usize, usize, Vec<Gate>, Vec<String>) {
     let broadcast = gates.iter().filter(|g| g.1 == GateKind::Broadcast);
     let flipflops = gates.iter().filter(|g| g.1 == GateKind::FlipFlop);
     let inverter = gates.iter().filter(|g| g.1 == GateKind::Inverter);
-    let m = flipflops.clone().count();
-    let n = inverter.clone().count();
 
     let mut gates: Vec<_> = broadcast
         .chain(flipflops)
@@ -54,102 +63,198 @@ fn parse(input: &str) -> (usize, usize, Vec<Gate>, Vec<String>) {
         .collect();
     gates.push((gates.len(), &receive));
 
-    let outputs: Vec<Vec<usize>> = gates
+    let outputs: Vec<(String, GateKind, Vec<usize>)> = gates
         .iter()
-        .map(|(_, (_, _, output))| {
-            output
+        .map(|(_, (label, kind, output))| {
+            (
+                label.to_owned(),
+                kind.to_owned(),
+                output
+                    .iter()
+                    .map(|s| {
+                        gates
+                            .iter()
+                            .find(|(_, (label, _, _))| label == s)
+                            .unwrap()
+                            .0
+                    })
+                    .collect(),
+            )
+        })
+        .collect();
+    let inputs: Vec<Vec<usize>> = (0..gates.len())
+        .map(|g| {
+            outputs
                 .iter()
-                .map(|s| {
-                    gates
-                        .iter()
-                        .find(|(_, (label, _, _))| label == s)
-                        .unwrap()
-                        .0
+                .enumerate()
+                .filter_map(|(j, (_, _, out))| {
+                    if out.iter().any(|o| *o == g) {
+                        Some(j)
+                    } else {
+                        None
+                    }
                 })
                 .collect()
         })
         .collect();
-    let masks: Vec<usize> = (0..gates.len())
-        .map(|g| {
-            let mut mask = 0;
-            for i in outputs.iter().enumerate().filter_map(|(j, out)| {
-                if out.iter().any(|o| *o == g) {
-                    Some(j)
-                } else {
-                    None
-                }
-            }) {
-                mask += 1 << i;
-            }
-            return mask;
+
+    iter::zip(inputs.into_iter(), outputs.into_iter())
+        .enumerate()
+        .map(|(index, (input, (label, kind, output)))| Gate {
+            label,
+            index,
+            kind,
+            output,
+            input,
+        })
+        .collect()
+}
+
+fn color(gates: &Vec<Gate>, conjunctions: &Vec<usize>, i: usize) -> usize {
+    let simple = |i: usize| {
+        conjunctions
+            .iter()
+            .position(|&c| gates[c].input.iter().any(|j| *j == i) || c == i)
+    };
+
+    if let Some(c) = simple(i) {
+        return c;
+    }
+
+    if let Some(c) = gates[i].input.iter().filter_map(|g| simple(*g)).next() {
+        return c;
+    }
+
+    gates[i]
+        .output
+        .iter()
+        .filter_map(|g| simple(*g))
+        .next()
+        .unwrap_or(4)
+}
+
+fn submodules(gates: &Vec<Gate>) -> Vec<Vec<Gate>> {
+    let conjunctions: Vec<usize> = (0..gates.len())
+        .filter(|&c| {
+            gates[c].kind == GateKind::Inverter
+                && gates[c]
+                    .input
+                    .iter()
+                    .all(|f| gates[*f].kind == GateKind::FlipFlop)
         })
         .collect();
+    let color = |i: usize| color(gates, &conjunctions, i);
 
-    (
-        m,
-        n,
-        iter::zip(masks.into_iter(), outputs.into_iter()).collect(),
-        gates
-            .iter()
-            .map(|(_, (label, _, _))| label.to_owned())
-            .collect(),
-    )
+    (0..conjunctions.len())
+        .map(|col| {
+            let mut module = vec![gates[0].clone()];
+            module.extend(
+                gates
+                    .iter()
+                    .filter(|gate| color(gate.index) == col && color(gate.output[0]) != 4)
+                    .map(|gate| gate.clone()),
+            );
+            module.push(Gate {
+                kind: GateKind::Output,
+                ..gates
+                    .iter()
+                    .find(|gate| color(gate.index) == col && color(gate.output[0]) == 4)
+                    .unwrap()
+                    .clone()
+            });
+
+            module
+                .iter()
+                .enumerate()
+                .map(|(index, gate)| Gate {
+                    input: gate
+                        .input
+                        .iter()
+                        .filter_map(|i| (0..module.len()).find(|j| module[*j].index == *i))
+                        .collect(),
+                    index,
+                    output: gate
+                        .output
+                        .iter()
+                        .filter_map(|i| (0..module.len()).find(|j| module[*j].index == *i))
+                        .collect(),
+                    ..gate.clone()
+                })
+                .collect()
+        })
+        .collect()
 }
 
-type Gate = (usize, Vec<usize>);
-
-pub fn part_one(input: &str) -> usize {
-    let (m, n, gates, strings) = parse(input);
-    dbg!(strings, gates.len());
-
-    let mut memory = 0;
-    let (mut nlow, mut nhigh) = (0, 0);
-    for _ in 0..1 {
-        let (mut next, mut last, mut pulses) = (0, 1, vec![(0, 0); 1 << 32]);
+pub fn part_one(input: &str) {
+    let gates = parse(input);
+    let mut count = vec![0; 2];
+    let mut memory = vec![false; gates.len()];
+    for _ in 0..1000 {
+        let (mut next, mut last, mut pulses) = (0, 1, vec![(0, false); 1 << 12]);
         while next != last {
-            pret(&memory, gates.len());
-            let (dst, high) = pulses[next];
-            if high > 0 {
-                nhigh += 1;
-            } else {
-                nlow += 1;
-            }
-            next = (next + 1) % (1 << 32);
-            let (mask, output) = &gates[dst];
-            let (mut bit, mut out) = (0, &vec![]);
-            //print!("-{}-> {} ", high, strings[dst]);
-            //pret(&memory, gates.len());
-            if dst == 0 {
-                bit = high;
-                out = output;
-            } else if dst <= n {
-                if high == 0 {
-                    memory ^= 1 << dst;
-                    bit = ((memory & 1 << dst) > 0) as usize;
-                    out = output;
+            let (dest, high) = pulses[next];
+            next = (next + 1) % (1 << 12);
+            count[high as usize] += 1;
+
+            let gate = &gates[dest];
+            match gate.kind {
+                GateKind::FlipFlop => {
+                    if high {
+                        continue;
+                    } else {
+                        memory[gate.index] = !memory[gate.index];
+                    }
                 }
-            } else {
-                bit = ((memory & mask) != *mask) as usize;
-                memory &= !(1 << dst) | (bit << dst);
-                out = output;
+                GateKind::Inverter => memory[gate.index] = !gate.input.iter().all(|i| memory[*i]),
+                _ => {}
             }
 
-            for o in out.iter() {
-                pulses[last] = (*o, bit);
-                last = (last + 1) % (1 << 16);
+            for dest in gate.output.iter() {
+                pulses[last] = (*dest, memory[gate.index]);
+                last = (last + 1) % (1 << 12);
             }
         }
     }
-    nlow * nhigh
+    println!("{}", count[0] * count[1])
 }
 
-fn pret(memory: &usize, n: usize) {
-    for i in 0..n {
-        if (memory & 1 << i) > 0 {
-            print!("#");
-        } else {
-            print!(" ");
+fn count(gates: Vec<Gate>) -> usize {
+    let mut memory = vec![false; gates.len()];
+    for count in 1.. {
+        let (mut next, mut last, mut pulses) = (0, 1, vec![(0, false); 1 << 12]);
+        while next != last {
+            let (dest, high) = pulses[next];
+            next = (next + 1) % (1 << 12);
+
+            let gate = &gates[dest];
+            match gate.kind {
+                GateKind::FlipFlop => {
+                    if high {
+                        continue;
+                    } else {
+                        memory[gate.index] = !memory[gate.index];
+                    }
+                }
+                GateKind::Inverter => memory[gate.index] = !gate.input.iter().all(|i| memory[*i]),
+                GateKind::Output => {
+                    if !high {
+                        return count;
+                    }
+                }
+                _ => {}
+            }
+
+            for dest in gate.output.iter() {
+                pulses[last] = (*dest, memory[gate.index]);
+                last = (last + 1) % (1 << 12);
+            }
         }
     }
-    println!();
+    0
+}
+
+pub fn part_two(input: &str) {
+    let gates = parse(input);
+    let counts: Vec<_> = submodules(&gates).into_iter().map(count).collect();
+    println!("{}", lcm(&counts));
 }
