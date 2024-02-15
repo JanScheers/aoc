@@ -129,6 +129,12 @@ pub fn pretty<T: ToString>(map: &Vec<Vec<T>>) {
     }
 }
 
+pub fn pretty3(map: &Vec<Vec<i32>>) {
+    for row in map.iter() {
+        let s: String = row.iter().map(|i| format!("{: >4}", i)).collect();
+        println!("{}", s)
+    }
+}
 pub fn pretty2(map: &Vec<&[char]>) {
     for row in map.iter() {
         let s: String = row.iter().collect();
