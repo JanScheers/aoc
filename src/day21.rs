@@ -17,23 +17,23 @@ pub const INPUT: &str = "...........
 #[derive(Hash, Debug, PartialEq, Eq, Clone, Default)]
 
 struct Diamond {
-    wheven: i64,
-    whodd: i64,
-    black: i64,
-    corners: Vec<i64>,
+    wh_even: i64,
+    wh_odd: i64,
+    bl_center: i64,
     wh_border: Vec<i64>,
     bl_border: Vec<i64>,
+    corners: Vec<i64>,
 }
 
 impl Diamond {
     fn new() -> Self {
         Diamond {
-            wheven: 0,
-            whodd: 0,
-            black: 0,
-            corners: vec![],
+            wh_even: 0,
+            wh_odd: 0,
+            bl_center: 0,
             wh_border: vec![],
             bl_border: vec![],
+            corners: vec![],
         }
     }
 }
@@ -109,9 +109,9 @@ pub fn part_two(input: &str, nsteps: usize) -> i64 {
         let (white, black) = count(&frontier, m, st);
         let n = (st - m / 2 - 1) / m;
         if n == 1 {
-            d.wheven = white[2][2 + (st + 1) as usize % 2];
-            d.whodd = white[2][2 + st as usize % 2];
-            d.black = black[1][1] + black[1][2];
+            d.wh_even = white[2][2 + (st + 1) as usize % 2];
+            d.wh_odd = white[2][2 + st as usize % 2];
+            d.bl_center = black[1][1] + black[1][2];
             d.wh_border
                 .push(white[1][1] + white[3][1] + white[1][3] + white[3][3]);
             d.bl_border
@@ -127,9 +127,9 @@ pub fn part_two(input: &str, nsteps: usize) -> i64 {
     let formula = |st: usize| {
         let n = (st - half - 1).div_euclid(m) as i64;
         let i = (st - half - 1).rem_euclid(m);
-        (n + 1) * n * d.black
-            + d.wheven * (n + (i as i64) % 2).pow(2)
-            + d.whodd * (n + (i as i64 + 1) % 2).pow(2)
+        (n + 1) * n * d.bl_center
+            + d.wh_even * (n + (i as i64) % 2).pow(2)
+            + d.wh_odd * (n + (i as i64 + 1) % 2).pow(2)
             + n * d.wh_border[i]
             + (n + 1) * d.bl_border[i]
             + d.corners[i]
