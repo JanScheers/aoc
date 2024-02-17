@@ -106,9 +106,9 @@ pub fn part_two(input: &str, nsteps: usize) -> i64 {
             }))
         });
         frontier = next;
-        let (white, black) = count(&frontier, m, st);
         let n = (st - m / 2 - 1) / m;
         if n == 1 {
+            let (white, black) = count(&frontier, m, st);
             d.wh_even = white[2][2 + (st + 1) as usize % 2];
             d.wh_odd = white[2][2 + st as usize % 2];
             d.bl_center = black[1][1] + black[1][2];
