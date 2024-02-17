@@ -16,7 +16,7 @@ pub const INPUT: &str = "...........
 .##..##.##.
 ...........";
 
-#[derive(Hash, Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Hash, Debug, PartialEq, Eq, Clone, Copy, Default)]
 struct Black {
     even: i64,
     odd: i64,
@@ -24,13 +24,29 @@ struct Black {
     borders: i64,
 }
 
-impl Black {
-    fn new() -> Black {
-        Black {
+struct White {
+    center: i64,
+    border: i64,
+}
+
+struct Formula {
+    even: i64,
+    odd: i64,
+    center: i64,
+    corner: Vec<i64>,
+    on_border: Vec<i64>,
+    off_border: Vec<i64>,
+}
+
+impl Formula {
+    fn new() -> Self {
+        Formula {
             even: 0,
             odd: 0,
-            corners: 0,
-            borders: 0,
+            center: 0,
+            corner: vec![],
+            on_border: vec![],
+            off_border: vec![],
         }
     }
 }
@@ -85,19 +101,17 @@ pub fn part_one(input: &str, nsteps: usize) {
     dbg!(frontier.len());
 }
 
-pub fn part_two(input: &str, nsteps: usize) {
+pub fn part_two(input: &str, nsteps: usize) -> i64 {
     let (start, map) = parse(input);
-    let (m, n) = size(&map);
-    let (m, n) = (m as i64, n as i64);
-    let half = m / 2;
+    let m = map.len() as i64;
     let mut frontier: HashSet<_> = HashSet::from([start]);
-    let (mut even, mut odd, mut corners, mut borders) = (0, 0, vec![], vec![]);
+    let mut form = Formula::new();
     for st in 1.. {
         let mut next: HashSet<Vec2<i64>> = HashSet::new();
         frontier.iter().for_each(|square| {
             next.extend(DIRS.iter().filter_map(|d| {
                 let step = *square + *d;
-                if map[step.0.rem_euclid(m) as usize][step.1.rem_euclid(n) as usize] {
+                if map[step.0.rem_euclid(m) as usize][step.1.rem_euclid(m) as usize] {
                     Some(step)
                 } else {
                     None
@@ -105,60 +119,35 @@ pub fn part_two(input: &str, nsteps: usize) {
             }))
         });
         frontier = next;
-        let n = (st as i64 - half - 1).div_euclid(m);
-        if n == 1 || n == 2 {
-            let (incnt, outcnt) = count(&frontier, m, st);
-            let d = in_diamond(&incnt, st);
-            even = d.even;
-            odd = d.odd;
-            corners.push(d.corners);
-            borders.push(d.borders);
-
-            out_diamond(&outcnt, m, st)
+        let (incnt, outcnt) = count(&frontier, m, st);
+        let n = (st - m / 2 - 1) / m;
+        if n == 1 {
+            form.even = incnt[2][2 + (st + 1) as usize % 2];
+            form.odd = incnt[2][2 + st as usize % 2];
+            form.center = outcnt[1][1] + outcnt[1][2];
+            form.on_border
+                .push(incnt[1][1] + incnt[3][1] + incnt[1][3] + incnt[3][3]);
+            form.corner
+                .push(incnt[0][2] + incnt[2][0] + incnt[4][2] + incnt[2][4]);
+            form.off_border
+                .push(outcnt[0][1] + outcnt[0][2] + outcnt[3][1] + outcnt[3][2])
         }
-        if n > 2 {
+        if n > 1 {
             break;
         }
     }
-    let (m, half) = (m as usize, half as usize);
+    let (m, half) = (m as usize, m as usize / 2);
     let formula = |st: usize| {
         let n = (st - half - 1).div_euclid(m) as i64;
         let i = (st - half - 1).rem_euclid(m);
-        n * borders[i]
-            + corners[i]
-            + if i % 2 == 0 {
-                even * (n + 1).pow(2) + odd * n.pow(2)
-            } else {
-                even * n.pow(2) + odd * (n + 1).pow(2)
-            }
+        (n + 1) * n * form.center
+            + n * form.on_border[i]
+            + (n + 1) * form.off_border[i]
+            + form.corner[i]
+            + form.even * (n + (i as i64) % 2).pow(2)
+            + form.odd * (n + (i as i64 + 1) % 2).pow(2)
     };
-
-    let (m, half) = (m as i64, half as i64);
-    let mut frontier: HashSet<_> = HashSet::from([start]);
-    for st in 1.. {
-        let mut next: HashSet<Vec2<i64>> = HashSet::new();
-        frontier.iter().for_each(|square| {
-            next.extend(DIRS.iter().filter_map(|d| {
-                let step = *square + *d;
-                if map[step.0.rem_euclid(m) as usize][step.1.rem_euclid(n) as usize] {
-                    Some(step)
-                } else {
-                    None
-                }
-            }))
-        });
-        frontier = next;
-
-        let n = (st as i64 - half - 1).div_euclid(m);
-        if n >= 0 {
-            let (incnt, _) = count(&frontier, m, st);
-            let a = incnt.iter().map(|v| v.iter().sum::<i64>()).sum::<i64>();
-            let b = formula(st as usize);
-            println!("{} {} {} {} {}", st, n, a, b, a == b);
-        }
-    }
-
-    dbg!(even, odd, corners, borders);
+    formula(nsteps)
 }
 
 fn count(frontier: &HashSet<Vec2<i64>>, m: i64, st: i64) -> (Vec<Vec<i64>>, Vec<Vec<i64>>) {
@@ -185,36 +174,4 @@ fn count(frontier: &HashSet<Vec2<i64>>, m: i64, st: i64) -> (Vec<Vec<i64>>, Vec<
         }
     }
     (incnt, outcnt)
-}
-
-fn in_diamond(incnt: &Vec<Vec<i64>>, st: i64) -> Black {
-    return Black {
-        even: incnt[2][2 + st as usize % 2],
-        odd: incnt[2][2 + (st + 1) as usize % 2],
-        corners: incnt[0][2] + incnt[2][0] + incnt[4][2] + incnt[2][4],
-        borders: incnt[1][1] + incnt[3][1] + incnt[1][3] + incnt[3][3],
-    };
-}
-
-fn out_diamond(outcnt: &Vec<Vec<i64>>, m: i64, st: i64);
-
-pub fn draw(step: i64) {
-    let m: i64 = 7;
-
-    for i in -2 * m..3 * m {
-        if i.rem_euclid(m) == 0 {
-            println!("{}", vec!["--"; (5 * m) as usize + 2].join(""))
-        }
-        for j in -2 * m..3 * m {
-            if j.rem_euclid(m) == 0 {
-                print!("|");
-            }
-            if j.rem_euclid(m) == 0 {}
-            let delta = (i.rem_euclid(m) - m / 2).abs() + (j.rem_euclid(m) - m / 2).abs();
-            let inside = delta <= m / 2;
-            let icoord = (i.div_euclid(m), j.div_euclid(m));
-            let ocoord = ((i + m / 2).div_euclid(m), (j + m / 2).div_euclid(m));
-        }
-        print!("\n");
-    }
 }
