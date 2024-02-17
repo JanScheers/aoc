@@ -1,8 +1,6 @@
 use std::collections::HashSet;
 
-use num::traits::Pow;
-
-use crate::{day1, size, Vec2, DIRS};
+use crate::{size, Vec2, DIRS};
 
 pub const INPUT: &str = "...........
 .....###.#.
@@ -16,37 +14,26 @@ pub const INPUT: &str = "...........
 .##..##.##.
 ...........";
 
-#[derive(Hash, Debug, PartialEq, Eq, Clone, Copy, Default)]
-struct Black {
-    even: i64,
-    odd: i64,
-    corners: i64,
-    borders: i64,
+#[derive(Hash, Debug, PartialEq, Eq, Clone, Default)]
+
+struct Diamond {
+    wheven: i64,
+    whodd: i64,
+    black: i64,
+    corners: Vec<i64>,
+    wh_border: Vec<i64>,
+    bl_border: Vec<i64>,
 }
 
-struct White {
-    center: i64,
-    border: i64,
-}
-
-struct Formula {
-    even: i64,
-    odd: i64,
-    center: i64,
-    corner: Vec<i64>,
-    on_border: Vec<i64>,
-    off_border: Vec<i64>,
-}
-
-impl Formula {
+impl Diamond {
     fn new() -> Self {
-        Formula {
-            even: 0,
-            odd: 0,
-            center: 0,
-            corner: vec![],
-            on_border: vec![],
-            off_border: vec![],
+        Diamond {
+            wheven: 0,
+            whodd: 0,
+            black: 0,
+            corners: vec![],
+            wh_border: vec![],
+            bl_border: vec![],
         }
     }
 }
@@ -105,7 +92,7 @@ pub fn part_two(input: &str, nsteps: usize) -> i64 {
     let (start, map) = parse(input);
     let m = map.len() as i64;
     let mut frontier: HashSet<_> = HashSet::from([start]);
-    let mut form = Formula::new();
+    let mut d = Diamond::new();
     for st in 1.. {
         let mut next: HashSet<Vec2<i64>> = HashSet::new();
         frontier.iter().for_each(|square| {
@@ -119,18 +106,18 @@ pub fn part_two(input: &str, nsteps: usize) -> i64 {
             }))
         });
         frontier = next;
-        let (incnt, outcnt) = count(&frontier, m, st);
+        let (white, black) = count(&frontier, m, st);
         let n = (st - m / 2 - 1) / m;
         if n == 1 {
-            form.even = incnt[2][2 + (st + 1) as usize % 2];
-            form.odd = incnt[2][2 + st as usize % 2];
-            form.center = outcnt[1][1] + outcnt[1][2];
-            form.on_border
-                .push(incnt[1][1] + incnt[3][1] + incnt[1][3] + incnt[3][3]);
-            form.corner
-                .push(incnt[0][2] + incnt[2][0] + incnt[4][2] + incnt[2][4]);
-            form.off_border
-                .push(outcnt[0][1] + outcnt[0][2] + outcnt[3][1] + outcnt[3][2])
+            d.wheven = white[2][2 + (st + 1) as usize % 2];
+            d.whodd = white[2][2 + st as usize % 2];
+            d.black = black[1][1] + black[1][2];
+            d.wh_border
+                .push(white[1][1] + white[3][1] + white[1][3] + white[3][3]);
+            d.bl_border
+                .push(black[0][1] + black[0][2] + black[3][1] + black[3][2]);
+            d.corners
+                .push(white[0][2] + white[2][0] + white[4][2] + white[2][4]);
         }
         if n > 1 {
             break;
@@ -140,12 +127,12 @@ pub fn part_two(input: &str, nsteps: usize) -> i64 {
     let formula = |st: usize| {
         let n = (st - half - 1).div_euclid(m) as i64;
         let i = (st - half - 1).rem_euclid(m);
-        (n + 1) * n * form.center
-            + n * form.on_border[i]
-            + (n + 1) * form.off_border[i]
-            + form.corner[i]
-            + form.even * (n + (i as i64) % 2).pow(2)
-            + form.odd * (n + (i as i64 + 1) % 2).pow(2)
+        (n + 1) * n * d.black
+            + d.wheven * (n + (i as i64) % 2).pow(2)
+            + d.whodd * (n + (i as i64 + 1) % 2).pow(2)
+            + n * d.wh_border[i]
+            + (n + 1) * d.bl_border[i]
+            + d.corners[i]
     };
     formula(nsteps)
 }
