@@ -15,7 +15,6 @@ pub const INPUT: &str = "...........
 ...........";
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone, Default)]
-
 struct Diamond {
     wh_even: i64,
     wh_odd: i64,
@@ -92,7 +91,7 @@ pub fn part_two(input: &str, nsteps: usize) -> i64 {
     let (start, map) = parse(input);
     let m = map.len() as i64;
     let mut frontier: HashSet<_> = HashSet::from([start]);
-    let mut d = Diamond::new();
+    let mut diam = Diamond::new();
     for st in 1.. {
         let mut next: HashSet<Vec2<i64>> = HashSet::new();
         frontier.iter().for_each(|square| {
@@ -109,14 +108,14 @@ pub fn part_two(input: &str, nsteps: usize) -> i64 {
         let n = (st - m / 2 - 1) / m;
         if n == 1 {
             let (white, black) = count(&frontier, m, st);
-            d.wh_even = white[2][2 + (st + 1) as usize % 2];
-            d.wh_odd = white[2][2 + st as usize % 2];
-            d.bl_center = black[1][1] + black[1][2];
-            d.wh_border
+            diam.wh_even = white[2][2 + (st + 1) as usize % 2];
+            diam.wh_odd = white[2][2 + st as usize % 2];
+            diam.bl_center = black[1][1] + black[1][2];
+            diam.wh_border
                 .push(white[1][1] + white[3][1] + white[1][3] + white[3][3]);
-            d.bl_border
+            diam.bl_border
                 .push(black[0][1] + black[0][2] + black[3][1] + black[3][2]);
-            d.corners
+            diam.corners
                 .push(white[0][2] + white[2][0] + white[4][2] + white[2][4]);
         }
         if n > 1 {
@@ -127,12 +126,12 @@ pub fn part_two(input: &str, nsteps: usize) -> i64 {
     let formula = |st: usize| {
         let n = (st - half - 1).div_euclid(m) as i64;
         let i = (st - half - 1).rem_euclid(m);
-        (n + 1) * n * d.bl_center
-            + d.wh_even * (n + (i as i64) % 2).pow(2)
-            + d.wh_odd * (n + (i as i64 + 1) % 2).pow(2)
-            + n * d.wh_border[i]
-            + (n + 1) * d.bl_border[i]
-            + d.corners[i]
+        (n + 1) * n * diam.bl_center
+            + diam.wh_even * (n + (i as i64) % 2).pow(2)
+            + diam.wh_odd * (n + (i as i64 + 1) % 2).pow(2)
+            + n * diam.wh_border[i]
+            + (n + 1) * diam.bl_border[i]
+            + diam.corners[i]
     };
     formula(nsteps)
 }
