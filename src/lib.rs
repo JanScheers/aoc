@@ -18,6 +18,7 @@ pub mod day2;
 pub mod day20;
 pub mod day21;
 pub mod day22;
+pub mod day23;
 pub mod day3;
 pub mod day4;
 pub mod day5;
@@ -29,10 +30,10 @@ pub mod day9;
 #[derive(Hash, Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Vec2<T>(T, T);
 
-pub const NORTH: u8 = 0;
-pub const EAST: u8 = 1;
-pub const SOUTH: u8 = 2;
-pub const WEST: u8 = 3;
+pub const NORTH: usize = 0;
+pub const EAST: usize = 1;
+pub const SOUTH: usize = 2;
+pub const WEST: usize = 3;
 pub const DIRS: &[Vec2<i64>] = &[Vec2(-1, 0), Vec2(0, 1), Vec2(1, 0), Vec2(0, -1)];
 
 impl<T: ops::Add<Output = T>> ops::Add<Vec2<T>> for Vec2<T> {
