@@ -113,18 +113,18 @@ fn search(graph: Graph, start: usize, goal: usize) -> usize {
     let mut best = 0;
     while let Some(mut hike) = stack.pop() {
         if hike.tail.0 < goal {
-            let verts = graph.get(&hike.tail).unwrap();
             hike.set.insert(hike.tail);
-            stack.extend(
-                verts
-                    .iter()
-                    .filter(|(next, _)| !hike.set.contains(next))
-                    .map(|(next, len)| Hike {
-                        tail: *next,
-                        len: hike.len + len,
-                        set: hike.set.clone(),
-                    }),
-            );
+            let options = graph
+                .get(&hike.tail)
+                .unwrap()
+                .iter()
+                .filter(|(next, _)| !hike.set.contains(next))
+                .map(|(next, len)| Hike {
+                    tail: *next,
+                    len: hike.len + len,
+                    set: hike.set.clone(),
+                });
+            stack.extend(options);
         } else if hike.len > best {
             best = hike.len;
             println!("{}", best);
