@@ -27,6 +27,7 @@ pub mod day6;
 pub mod day7;
 pub mod day8;
 pub mod day9;
+pub mod y22;
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Vec2<T>(T, T);

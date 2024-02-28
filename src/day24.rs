@@ -46,10 +46,6 @@ fn solve_t(a: &Hail, x: f64) -> f64 {
     (x - a.p.0 as f64) / a.v.0 as f64
 }
 
-fn does_intersect(a: &Hail, b: &Hail) -> bool {
-    let x = solve_x(a, b);
-    solve_t(a, x) >= 0.0 && solve_t(b, x) >= 0.0
-}
 /*
 let (va, vb) = (a.v.1 as f64 / a.v.0 as f64, b.v.1 as f64 / b.v.0 as f64);
 (a.p.0 as f64 * va - b.p.0 as f64 * vb - a.p.1 as f64 + b.p.1 as f64) / (va - vb)
