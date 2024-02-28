@@ -2,6 +2,8 @@ pub mod day1;
 pub mod day2;
 pub mod day3;
 pub mod day4;
+pub mod day5;
+pub mod day6;
 
 const SESSION: &str = "session=53616c7465645f5f1b5e774f9590b3208d567b2e2dcd60ce52d10c6aed45725f2709551eaa39f78c528b06bb5639c7e83dd90f7080464df4314ff7c7afaa1629";
 
