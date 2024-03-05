@@ -25,12 +25,13 @@ $ ls
 use std::cell::RefCell;
 use std::rc::Rc;
 
+#[derive(Debug, PartialEq, Eq)]
 struct Path {
     name: String,
-    parent: Option<Rc<RefCell<Path>>>,
     kind: PathKind,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 enum PathKind {
     Dir(Vec<Rc<RefCell<Path>>>),
     File(usize),
@@ -66,36 +67,34 @@ impl std::fmt::Display for Path {
 
 fn parse(input: &str) -> Rc<RefCell<Path>> {
     let mut lines = input.lines().peekable();
-    let mut root: Option<Rc<RefCell<Path>>> = None;
-    let mut node: Option<Rc<RefCell<Path>>> = None;
+    let mut stack = vec![];
     while let Some(line) = lines.next() {
         match &line[2..4] {
             "cd" => {
                 let dir = &line[5..];
-                node = match dir {
+                match dir {
                     "/" => {
-                        root = Some(Rc::new(RefCell::new(Path {
+                        let root = Rc::new(RefCell::new(Path {
                             name: dir.to_string(),
-                            parent: None,
                             kind: PathKind::Dir(vec![]),
-                        })));
-                        root.clone()
+                        }));
+                        stack = vec![root.clone()];
                     }
-                    ".." => node.as_ref().and_then(|n| n.borrow().parent.clone()),
-                    _ => node.as_ref().and_then(|n| match &n.borrow().kind {
-                        PathKind::Dir(dirs) => dirs
-                            .iter()
-                            .find(|n| n.borrow().name == dir)
-                            .map(|n| n.clone()),
-                        _ => node.clone(),
-                    }),
+                    ".." => {
+                        stack.pop();
+                    }
+                    _ => {
+                        let node = stack[stack.len() - 1].clone();
+                        if let PathKind::Dir(dirs) = &node.borrow().kind {
+                            if let Some(next) = dirs.iter().find(|n| n.borrow().name == dir) {
+                                stack.push(next.clone());
+                            }
+                        };
+                    }
                 };
             }
             "ls" => {
-                let Some(node) = node.as_mut() else {
-                    continue;
-                };
-                let PathKind::Dir(ls) = &mut node.borrow_mut().kind else {
+                let PathKind::Dir(ls) = &mut stack.last().unwrap().borrow_mut().kind else {
                     continue;
                 };
                 while lines
@@ -106,13 +105,11 @@ fn parse(input: &str) -> Rc<RefCell<Path>> {
                     match lines.next().and_then(|line| line.trim().split_once(" ")) {
                         Some(("dir", name)) => ls.push(Rc::new(RefCell::new(Path {
                             name: name.to_string(),
-                            parent: Some(node.clone()),
                             kind: PathKind::Dir(vec![]),
                         }))),
                         Some((size, name)) => ls.push(Rc::new(RefCell::new(Path {
                             name: name.to_string(),
-                            parent: Some(node.clone()),
-                            kind: PathKind::File(size.parse().unwrap()),
+                            kind: PathKind::File(size.parse().unwrap_or_default()),
                         }))),
                         None => (),
                     }
@@ -121,7 +118,7 @@ fn parse(input: &str) -> Rc<RefCell<Path>> {
             _ => (),
         }
     }
-    root.unwrap()
+    stack[0].clone()
 }
 
 pub fn part_one(input: &str) -> usize {
