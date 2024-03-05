@@ -79,16 +79,13 @@ pub fn part_two(input: &str) -> i64 {
             .unwrap();
         if delta.norm_squared() < 1.0 {
             println!("{}", i);
-            println!("{}", sol);
             break;
         }
         sol += delta;
     }
-    let [_a, b, _c, d, _e, f] = sol.as_slice()[..6]
-        .iter()
-        .map(|f| f.round() as i64)
-        .collect::<Vec<i64>>()[..]
-    else {
+    let sol: Vec<i64> = sol.iter().map(|f| f.round() as i64).collect();
+    println!("{}", na::DVector::from_vec(sol.clone()));
+    let [_a, b, _c, d, _e, f] = sol[..6] else {
         panic!("");
     };
     b + d + f
