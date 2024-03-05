@@ -65,13 +65,13 @@ impl std::fmt::Display for Path {
     }
 }
 
-fn parse(input: &str) -> Rc<RefCell<Path>> {
+fn parse(input: &str) -> Option<Rc<RefCell<Path>>> {
     let mut lines = input.lines().peekable();
     let mut stack = vec![];
     while let Some(line) = lines.next() {
-        match &line[2..4] {
+        match line.get(2..4)? {
             "cd" => {
-                let dir = &line[5..];
+                let dir = line.get(5..)?;
                 match dir {
                     "/" => {
                         let root = Rc::new(RefCell::new(Path {
@@ -84,45 +84,45 @@ fn parse(input: &str) -> Rc<RefCell<Path>> {
                         stack.pop();
                     }
                     _ => {
-                        let node = stack[stack.len() - 1].clone();
-                        if let PathKind::Dir(dirs) = &node.borrow().kind {
-                            if let Some(next) = dirs.iter().find(|n| n.borrow().name == dir) {
-                                stack.push(next.clone());
-                            }
+                        if let PathKind::Dir(dirs) = &stack.last()?.clone().borrow().kind {
+                            let path = dirs.iter().find(|n| n.borrow().name == dir)?;
+                            stack.push(path.clone());
                         };
                     }
                 };
             }
             "ls" => {
-                let PathKind::Dir(ls) = &mut stack.last().unwrap().borrow_mut().kind else {
+                let PathKind::Dir(ls) = &mut stack.last()?.borrow_mut().kind else {
                     continue;
                 };
                 while lines
                     .peek()
-                    .map(|l| l.as_bytes()[0] != b'$')
+                    .map(|line| line.chars().next() != Some('$'))
                     .unwrap_or(false)
                 {
-                    match lines.next().and_then(|line| line.trim().split_once(" ")) {
-                        Some(("dir", name)) => ls.push(Rc::new(RefCell::new(Path {
+                    let node = match lines.next().and_then(|line| line.trim().split_once(" "))? {
+                        ("dir", name) => Rc::new(RefCell::new(Path {
                             name: name.to_string(),
                             kind: PathKind::Dir(vec![]),
-                        }))),
-                        Some((size, name)) => ls.push(Rc::new(RefCell::new(Path {
+                        })),
+                        (size, name) => Rc::new(RefCell::new(Path {
                             name: name.to_string(),
                             kind: PathKind::File(size.parse().unwrap_or_default()),
-                        }))),
-                        None => (),
-                    }
+                        })),
+                    };
+                    ls.push(node);
                 }
             }
             _ => (),
         }
     }
-    stack[0].clone()
+    stack.first().cloned()
 }
 
 pub fn part_one(input: &str) -> usize {
-    let tree = parse(input);
+    let Some(tree) = parse(input) else {
+        return 0;
+    };
     println!("{}", tree.borrow());
     let mut total = 0;
     let mut sum_smallest = |size: usize| {
@@ -135,7 +135,9 @@ pub fn part_one(input: &str) -> usize {
 }
 
 pub fn part_two(input: &str) -> usize {
-    let tree = parse(input);
+    let Some(tree) = parse(input) else {
+        return 0;
+    };
     let target = 30000000 + size_search(&tree, &mut |_| ()) - 70000000;
     let mut best = usize::MAX;
     let mut find_smallest = |size: usize| {
