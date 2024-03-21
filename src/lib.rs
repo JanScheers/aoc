@@ -348,3 +348,25 @@ impl TreeNode {
         }
     }
 }
+
+// Definition for singly-linked list.
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub struct ListNode {
+    pub val: i32,
+    pub next: Option<Box<ListNode>>,
+}
+
+impl ListNode {
+    #[inline]
+    pub fn new(val: i32) -> Self {
+        ListNode { next: None, val }
+    }
+
+    pub fn serialize(vals: &[i32]) -> Option<Box<ListNode>> {
+        vals.iter().rev().fold(None, |head, val| {
+            let mut node = Self::new(*val);
+            node.next = head;
+            Some(Box::new(node))
+        })
+    }
+}
