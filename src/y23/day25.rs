@@ -12,11 +12,13 @@ lsr: lhk
 rzs: qnr cmg lsr rsh
 frs: qnr lhk lsr";
 extern crate nalgebra as na;
-use rand::Rng;
+use rand::{rngs::ThreadRng, Rng};
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-pub fn parse(input: &str) -> Vec<Vec<usize>> {
+type Graph = Vec<Vec<usize>>;
+
+pub fn parse(input: &str) -> Graph {
     let graph: HashMap<String, HashSet<String>> = input
         .trim()
         .lines()
@@ -49,10 +51,86 @@ pub fn parse(input: &str) -> Vec<Vec<usize>> {
 
 pub fn part_one(input: &str) -> usize {
     let graph = parse(input);
+    let a = 0;
+    for b in (1..graph.len()).rev() {
+        let graph = (0..3).fold(Some(graph.clone()), |graph, _| {
+            graph.and_then(|graph| bfs(&graph, a, b).map(|path| cut_graph(&graph, path)))
+        });
+        if let Some(graph) = graph {
+            if bfs(&graph, a, b).is_none() {
+                let a_len = reachable(&graph, a).len();
+                return (graph.len() - a_len) * a_len;
+            }
+        }
+    }
+    0
+}
+
+fn bfs(graph: &Graph, a: usize, b: usize) -> Option<Vec<usize>> {
+    let mut seen = HashSet::new();
+    let mut queue = VecDeque::from([(a, vec![])]);
+    while let Some((curr, path)) = queue.pop_front() {
+        if curr == b {
+            return Some(path);
+        }
+        for next in graph[curr].iter() {
+            if seen.contains(next) {
+                continue;
+            }
+            seen.insert(*next);
+            let mut path = path.clone();
+            path.push(curr);
+            queue.push_back((*next, path))
+        }
+    }
+    None
+}
+
+fn cut_graph(graph: &Graph, path: Vec<usize>) -> Graph {
+    let cut: HashSet<_> = path[1..]
+        .iter()
+        .zip(path[..path.len() - 1].iter())
+        .flat_map(|(a, b)| [(*a, *b), (*b, *a)])
+        .collect();
+    graph
+        .iter()
+        .enumerate()
+        .map(|(node, verts)| {
+            verts
+                .iter()
+                .filter_map(|v| {
+                    if cut.contains(&(node, *v)) {
+                        None
+                    } else {
+                        Some(*v)
+                    }
+                })
+                .collect()
+        })
+        .collect()
+}
+
+fn reachable(graph: &Graph, a: usize) -> HashSet<usize> {
+    let mut seen = HashSet::new();
+    let mut queue = VecDeque::from([(a, vec![])]);
+    while let Some((curr, path)) = queue.pop_front() {
+        for next in graph[curr].iter() {
+            if seen.contains(next) {
+                continue;
+            }
+            seen.insert(*next);
+            let mut path = path.clone();
+            path.push(curr);
+            queue.push_back((*next, path))
+        }
+    }
+    seen
+}
+
+fn cluster_walk(graph: Graph) -> usize {
     let len = graph.len();
     let mut freqs = na::DMatrix::zeros(len, len);
     for i in 1.. {
-        println!("{}", i);
         random_walk(&graph, &mut freqs);
         for parts in cluster(&freqs) {
             if let Some(_graph) = cut(&graph, &parts) {
@@ -63,7 +141,7 @@ pub fn part_one(input: &str) -> usize {
     0
 }
 
-fn random_walk(graph: &Vec<Vec<usize>>, freqs: &mut na::DMatrix<usize>) {
+fn random_walk(graph: &Graph, freqs: &mut na::DMatrix<usize>) {
     let graph_len = graph.len();
     let walk_len = 150.min(graph_len);
     let mut rng = rand::thread_rng();
@@ -144,7 +222,7 @@ fn std(cs: &[(usize, usize)]) -> f64 {
         .sqrt()
 }
 
-fn cut(graph: &Vec<Vec<usize>>, parts: &Vec<HashSet<usize>>) -> Option<Vec<Vec<usize>>> {
+fn cut(graph: &Graph, parts: &Vec<HashSet<usize>>) -> Option<Vec<Vec<usize>>> {
     let mut cuts = 0;
     let graph = graph
         .iter()
