@@ -22,7 +22,10 @@ pub const INPUT: &str = "[1,1,3,1,1]
 [1,[2,[3,[4,[5,6,7]]]],8,9]
 [1,[2,[3,[4,[5,6,0]]]],8,9]
 ";
-use std::cmp::Ordering::Equal;
+use std::{
+    cmp::Ordering::Equal,
+    fmt::{Display, Write},
+};
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
 enum Packet {
@@ -83,6 +86,26 @@ impl Packet {
     }
 }
 
+impl Display for Packet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Packet::List(vec) => {
+                f.write_char('[')?;
+                let mut ps = vec.iter();
+                if let Some(p) = ps.next() {
+                    p.fmt(f)?;
+                }
+                for p in ps {
+                    f.write_char(',')?;
+                    p.fmt(f)?;
+                }
+                f.write_char(']')
+            }
+            Packet::Value(v) => v.fmt(f),
+        }
+    }
+}
+
 impl PartialOrd for Packet {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
@@ -138,6 +161,9 @@ pub fn part_one(input: &str) -> usize {
 pub fn part_two(input: &str) -> usize {
     let mut packets = parse(input);
     packets.sort_unstable();
+    for p in packets.iter() {
+        println!("{}", p);
+    }
     let i = packets.binary_search(&Packet::new("[[2]]")).unwrap_err();
     let j = packets.binary_search(&Packet::new("[[6]]")).unwrap_err();
     (i + 1) * (j + 2)
