@@ -12,7 +12,7 @@ lsr: lhk
 rzs: qnr cmg lsr rsh
 frs: qnr lhk lsr";
 extern crate nalgebra as na;
-use rand::{rngs::ThreadRng, Rng};
+use rand::Rng;
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
@@ -127,10 +127,10 @@ fn reachable(graph: &Graph, a: usize) -> HashSet<usize> {
     seen
 }
 
-fn cluster_walk(graph: Graph) -> usize {
+pub fn cluster_walk(graph: Graph) -> usize {
     let len = graph.len();
     let mut freqs = na::DMatrix::zeros(len, len);
-    for i in 1.. {
+    for _ in 1.. {
         random_walk(&graph, &mut freqs);
         for parts in cluster(&freqs) {
             if let Some(_graph) = cut(&graph, &parts) {

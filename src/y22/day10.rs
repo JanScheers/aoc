@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 use num::Integer;
 extern crate nalgebra as na;
 
